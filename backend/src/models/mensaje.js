@@ -18,7 +18,8 @@ const Mensaje = sequelize.define('Mensaje', {
 }, { 
   tableName: 'mensajes',
   underscored: true,
-  timestamps: true 
+  createdAt: 'created_at',
+  updatedAt: false
 });
 
 module.exports = Mensaje;

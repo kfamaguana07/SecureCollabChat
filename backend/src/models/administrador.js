@@ -18,7 +18,9 @@ const Administrador = sequelize.define('Administrador', {
   }
 }, { 
   tableName: 'administradores',
-  underscored: true 
+  underscored: true,
+  createdAt: 'created_at',   // Usar tu columna created_at
+  updatedAt: false 
 });
 
 module.exports = Administrador;

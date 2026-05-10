@@ -47,14 +47,14 @@ const PORT = process.env.PORT || 3000;
 
 sequelize.sync({ alter: false })
   .then(() => {
-    console.log('✅ Modelos sincronizados con la base de datos.');
+    console.log('Modelos sincronizados con la base de datos.');
     server.listen(PORT, () => {
-      console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-      console.log(`🔌 WebSocket listo en ws://localhost:${PORT}`);
+      console.log(`Servidor corriendo en http://localhost:${PORT}`);
+      console.log(`WebSocket listo en ws://localhost:${PORT}`);
     });
   })
   .catch(err => {
-    console.error('❌ Error al sincronizar la DB:', err);
+    console.error('Error al sincronizar la DB:', err);
     process.exit(1);
   });
 

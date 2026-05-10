@@ -1,0 +1,202 @@
+{
+    "info": {
+        "name": "SecureCollabChat",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Admin",
+            "item": [
+                {
+                    "name": "1. Registrar Admin",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" }
+                        ],
+                        "url": {
+                            "raw": "http://localhost:3000/api/admin/registrar",
+                            "protocol": "http",
+                            "host": ["localhost"],
+                            "port": "3000",
+                            "path": ["api", "admin", "registrar"]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"usuario\": \"admin\",\n  \"password\": \"123456\",\n  \"email\": \"admin@espe.edu.ec\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "2. Login Admin",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" }
+                        ],
+                        "url": {
+                            "raw": "http://localhost:3000/api/admin/login",
+                            "protocol": "http",
+                            "host": ["localhost"],
+                            "port": "3000",
+                            "path": ["api", "admin", "login"]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"usuario\": \"admin\",\n  \"password\": \"123456\"\n}"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Salas (Admin require token)",
+            "item": [
+                {
+                    "name": "3. Crear Sala",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Authorization", "value": "Bearer TU_TOKEN_AQUI" }
+                        ],
+                        "url": {
+                            "raw": "http://localhost:3000/api/salas",
+                            "protocol": "http",
+                            "host": ["localhost"],
+                            "port": "3000",
+                            "path": ["api", "salas"]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"nombre\": \"Sala de Redes\",\n  \"pin\": \"1234\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "4. Listar Salas",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer TU_TOKEN_AQUI" }
+                        ],
+                        "url": {
+                            "raw": "http://localhost:3000/api/salas",
+                            "protocol": "http",
+                            "host": ["localhost"],
+                            "port": "3000",
+                            "path": ["api", "salas"]
+                        }
+                    }
+                },
+                {
+                    "name": "5. Eliminar Sala",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            { "key": "Authorization", "value": "Bearer TU_TOKEN_AQUI" }
+                        ],
+                        "url": {
+                            "raw": "http://localhost:3000/api/salas/1",
+                            "protocol": "http",
+                            "host": ["localhost"],
+                            "port": "3000",
+                            "path": ["api", "salas", "1"]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Salas (Usuarios - Púbicos)",
+            "item": [
+                {
+                    "name": "6. Unirse a Sala",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" }
+                        ],
+                        "url": {
+                            "raw": "http://localhost:3000/api/salas/join",
+                            "protocol": "http",
+                            "host": ["localhost"],
+                            "port": "3000",
+                            "path": ["api", "salas", "join"]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"pin\": \"1234\",\n  \"alias\": \"Kevin\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "7. Obtener Mensajes",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:3000/api/salas/1/mensajes",
+                            "protocol": "http",
+                            "host": ["localhost"],
+                            "port": "3000",
+                            "path": ["api", "salas", "1", "mensajes"]
+                        }
+                    }
+                },
+                {
+                    "name": "8. Obtener Usuarios Conectados",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:3000/api/salas/1/usuarios",
+                            "protocol": "http",
+                            "host": ["localhost"],
+                            "port": "3000",
+                            "path": ["api", "salas", "1", "usuarios"]
+                        }
+                    }
+                },
+                {
+                    "name": "9. Subir Archivo",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "http://localhost:3000/api/salas/1/upload",
+                            "protocol": "http",
+                            "host": ["localhost"],
+                            "port": "3000",
+                            "path": ["api", "salas", "1", "upload"]
+                        },
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "file",
+                                    "type": "file",
+                                    "src": []
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Health Check",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "http://localhost:3000/api/health",
+                    "protocol": "http",
+                    "host": ["localhost"],
+                    "port": "3000",
+                    "path": ["api", "health"]
+                }
+            }
+        }
+    ]
+}

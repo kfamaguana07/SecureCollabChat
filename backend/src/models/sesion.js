@@ -34,8 +34,9 @@ const Sesion = sequelize.define('Sesion', {
   }
 }, { 
   tableName: 'sesiones',
-  timestamps: true,
-  underscored: true
+  underscored: true,
+  createdAt: 'created_at',
+  updatedAt: false
 });
 
 module.exports = Sesion;

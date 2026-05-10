@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS administradores (
 -- 2. SALAS
 CREATE TABLE IF NOT EXISTS salas (
     id VARCHAR(255) PRIMARY KEY,
-    pin VARCHAR(10) NOT NULL CHECK (char_length(pin) >= 4),
+    pin VARCHAR(255) NOT NULL,
     tipo VARCHAR(50) NOT NULL CHECK (tipo IN ('texto', 'multimedia')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

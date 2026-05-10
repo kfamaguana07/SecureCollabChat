@@ -21,7 +21,9 @@ const Archivo = sequelize.define('Archivo', {
   }
 }, { 
   tableName: 'archivos',
-  underscored: true 
+  underscored: true,
+  createdAt: 'created_at',
+  updatedAt: false
 });
 
 module.exports = Archivo;

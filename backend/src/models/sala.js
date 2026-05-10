@@ -16,8 +16,9 @@ const Sala = sequelize.define('Sala', {
   }
 }, { 
   tableName: 'salas',
-  timestamps: true,
-  underscored: true // Para que reconozca created_at en lugar de createdAt
+  underscored: true, // Para que reconozca created_at en lugar de createdAt
+  createdAt: 'created_at',
+  updatedAt: false 
 });
 
 module.exports = Sala;
