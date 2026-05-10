@@ -1,14 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const salaController = require('../controllers/salaController');
+const auth = require('../middleware/auth');
 const upload = require('../config/multer');
 
-router.post('/', auth, salaController.crearSala);
+// ── Rutas de Administrador (requieren JWT) 
+router.post('/', auth, salaController.crearSala);                          // Crear sala
+router.get('/', auth, salaController.listarSalas);                         // Listar salas
+router.delete('/:id', auth, salaController.eliminarSala);                  // Eliminar sala
 
-router.post('/', salaController.crearSala); // POST /api/salas
-router.post('/join', salaController.unirseSala); // POST /api/salas/join
-router.get('/:id/mensajes', salaController.obtenerMensajes); // GET /api/salas/:id/mensajes
+// ── Rutas de Usuarios 
+router.post('/join', salaController.unirseSala);                           // Unirse a sala con PIN
+router.get('/:id/mensajes', salaController.obtenerMensajes);               // Historial de mensajes
+router.get('/:id/usuarios', salaController.obtenerUsuarios);               // Usuarios conectados
 
-router.post('/:id/upload', upload.single('file'), salaController.subirArchivo);
+// ── Multimedia
+router.post('/:id/upload', upload.single('file'), salaController.subirArchivo); // Subir archivo
 
 module.exports = router;

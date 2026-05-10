@@ -18,11 +18,19 @@ const Sesion = sequelize.define('Sesion', {
   device_id: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true // Asegura que una PC solo tenga una sesión activa en la base de datos
+    unique: true
   },
   ip: {
     type: DataTypes.STRING,
     allowNull: false
+  },
+  sala_id: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  socket_id: {
+    type: DataTypes.STRING,
+    allowNull: true  // Se actualiza cuando el usuario conecta por WebSocket
   }
 }, { 
   tableName: 'sesiones',

@@ -1,15 +1,25 @@
-# Dependencies
+# Archivos de entorno
+.env
+.env.local
+.env.*.local
+
+# Node
 node_modules/
 npm-debug.log
 yarn-error.log
 package-lock.json
 yarn.lock
 
-# Environment variables
-.env
+# Backend
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/dist/
 
-# Python virtual environments
-.venv/
+# Frontend
+frontend/dist/
+frontend/build/
+frontend/.next/
+frontend/out/
 
 # IDE
 .vscode/
@@ -19,30 +29,9 @@ yarn.lock
 *~
 .DS_Store
 
-# Build outputs
-dist/
-build/
-out/
-
 # Logs
-logs/
 *.log
+logs/
 
-# OS
-Thumbs.db
-.DS_Store
-
-# Testing
-coverage/
-.nyc_output/
-
-# Misc
-.cache/
-temp/
-tmp/
-__pycache__/
-*.pyc
-
-# next.js
-.next/
-next-env.d.ts
+# Heroku
+.env.production

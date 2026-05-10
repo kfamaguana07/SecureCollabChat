@@ -1,24 +1,24 @@
+require('dotenv').config();
 const { Sequelize } = require('sequelize');
 
 const sequelize = new Sequelize(
-  'SecureCollabChat', 
-  'kevin',         
-  'espe123',         
+  process.env.DB_NAME,
+  process.env.DB_USER,
+  process.env.DB_PASSWORD,
   {
-    host: 'localhost', 
-    port: 5432,
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT) || 5432,
     dialect: 'postgres',
-    logging: false,    // Mantiene la consola limpia
+    logging: false,
     define: {
       timestamps: true,
-      underscored: true // Importante para que coincida con tus nombres en init.sql
+      underscored: true
     }
   }
 );
 
-// Prueba rápida de conexión
 sequelize.authenticate()
-  .then(() => console.log('Conexión a PostgreSQL exitosa.'))
-  .catch(err => console.error('Error al conectar a la DB:', err));
+  .then(() => console.log('✅ Conexión a PostgreSQL exitosa.'))
+  .catch(err => console.error('❌ Error al conectar a la DB:', err));
 
 module.exports = sequelize;
