@@ -35,7 +35,12 @@ if (!isMainThread) {
     fecha_envio: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
     sala_id: { type: DataTypes.STRING },
     sesion_id: { type: DataTypes.UUID }
-  }, { tableName: 'mensajes', underscored: true, timestamps: true });
+  }, { 
+    tableName: 'mensajes', 
+    underscored: true, 
+    createdAt: 'created_at',
+    updatedAt: false 
+  });
 
   MensajeW.create({ contenido, sala_id, sesion_id })
     .then(msg => {
@@ -157,7 +162,7 @@ function configurarSockets(io) {
           sala_id,
           sesion_id,
           nickname: datosUsuario.nickname,
-          timestamp: mensajeGuardado.created_at
+          timestamp: mensajeGuardado.created_at || new Date().toISOString()
         });
 
       } catch (err) {
