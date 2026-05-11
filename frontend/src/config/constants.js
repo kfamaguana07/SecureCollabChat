@@ -7,8 +7,10 @@ export const ENDPOINTS = {
   ADMIN_REGISTRAR: '/api/admin/registrar',
   SALAS_CREAR:     '/api/salas',
   SALAS_LISTAR:    '/api/salas',
+  SALAS_PUBLICAS:  '/api/salas/public',
   SALAS_ELIMINAR:  (id) => `/api/salas/${id}`,
   SALAS_UNIRSE:    '/api/salas/join',
+  SALAS_SESION:    '/api/salas/sesion',
   SALAS_MENSAJES:  (id) => `/api/salas/${id}/mensajes`,
   SALAS_USUARIOS:  (id) => `/api/salas/${id}/usuarios`,
   SALAS_UPLOAD:    (id) => `/api/salas/${id}/upload`,
@@ -27,5 +29,6 @@ export const SOCKET_EVENTS = {
   LISTA_USUARIOS:       'lista_usuarios',
   USUARIO_ESCRIBIENDO:  'usuario_escribiendo',
   USUARIO_DEJO_ESCRIBIR:'usuario_dejo_escribir',
+  SESION_CERRADA:       'sesion_cerrada',
   ERROR_EVENTO:         'error_evento',
 };

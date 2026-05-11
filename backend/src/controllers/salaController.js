@@ -1,6 +1,31 @@
 require('dotenv').config();
 const bcrypt = require('bcrypt');
+const { Worker } = require('worker_threads');
+const path = require('path');
 const { Sala, Sesion, Mensaje, Archivo } = require('../models');
+
+function persistirArchivoEnWorker(datos) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(path.join(__dirname, '../workers/uploadWorker.js'), { workerData: datos });
+    worker.on('message', (result) => {
+      if (result.success) resolve(result.data);
+      else reject(new Error(result.error));
+    });
+    worker.on('error', reject);
+    worker.on('exit', (code) => {
+      if (code !== 0) reject(new Error(`Worker salio con codigo ${code}`));
+    });
+  });
+}
+
+async function encontrarSalaPorPin(pin) {
+  const salas = await Sala.findAll({ attributes: ['id', 'pin', 'tipo', 'created_at'] });
+  for (const sala of salas) {
+    const pinValido = await bcrypt.compare(String(pin), sala.pin);
+    if (pinValido) return sala;
+  }
+  return null;
+}
 
 // ─────────────────────────────────────────────
 // ADMIN: Crear Sala
@@ -14,6 +39,11 @@ exports.crearSala = async (req, res) => {
     }
     if (!['texto', 'multimedia'].includes(tipo)) {
       return res.status(400).json({ error: 'El tipo debe ser "texto" o "multimedia".' });
+    }
+
+    const salaConPin = await encontrarSalaPorPin(pin);
+    if (salaConPin) {
+      return res.status(409).json({ error: 'Ya existe una sala con este PIN. Usa otro PIN.' });
     }
 
     // Encriptar el PIN antes de guardarlo
@@ -67,20 +97,21 @@ exports.eliminarSala = async (req, res) => {
 // ─────────────────────────────────────────────
 exports.unirseSala = async (req, res) => {
   try {
-    const { nombre_real, pin, device_id, sala_id } = req.body;
+    const { nombre_real, pin, device_id } = req.body;
 
-    if (!nombre_real || !pin || !device_id || !sala_id) {
-      return res.status(400).json({ error: 'nombre_real, pin, device_id y sala_id son requeridos.' });
+    if (!nombre_real || !pin || !device_id) {
+      return res.status(400).json({ error: 'nombre_real, pin y device_id son requeridos.' });
     }
 
     const ipCliente = req.headers['x-forwarded-for'] || req.ip || req.connection.remoteAddress;
 
-    const sala = await Sala.findByPk(sala_id);
-    if (!sala) return res.status(404).json({ error: 'La sala no existe.' });
+    const sala = await encontrarSalaPorPin(pin);
 
-    // Verificar PIN encriptado
-    const pinValido = await bcrypt.compare(String(pin), sala.pin);
-    if (!pinValido) return res.status(401).json({ error: 'PIN incorrecto.' });
+
+    
+    if (!sala) return res.status(401).json({ error: 'PIN incorrecto.' });
+
+    const sala_id = sala.id;
 
     // Verificar sesión única por dispositivo
     const sesionExistente = await Sesion.findOne({ where: { device_id } });
@@ -102,6 +133,14 @@ exports.unirseSala = async (req, res) => {
           error: 'Ya tienes una sesión activa en otra sala. Ciérrala antes de unirte a una nueva.'
         });
       }
+    }
+
+    // Verificar sesión única por IP - evitar que la misma IP esté en dos salas
+    const sesionPorIP = await Sesion.findOne({ where: { ip: ipCliente } });
+    if (sesionPorIP && sesionPorIP.sala_id !== sala_id) {
+      return res.status(403).json({
+        error: 'Ya hay una sesión activa desde tu IP en otra sala. Ciérrala antes de unirte a esta sala.'
+      });
     }
 
     // Generar nickname único dentro de la sala
@@ -132,6 +171,36 @@ exports.unirseSala = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────
+// USUARIO: Obtener sesión activa por dispositivo
+// ─────────────────────────────────────────────
+exports.obtenerSesionActiva = async (req, res) => {
+  try {
+    const { device_id } = req.query;
+    if (!device_id) {
+      return res.status(400).json({ error: 'device_id es requerido.' });
+    }
+
+    const sesion = await Sesion.findOne({ where: { device_id } });
+    if (!sesion) return res.status(404).json({ error: 'No hay sesión activa.' });
+
+    const sala = await Sala.findByPk(sesion.sala_id);
+    if (!sala) return res.status(404).json({ error: 'La sala no existe.' });
+
+    return res.status(200).json({
+      sesion: {
+        id: sesion.id,
+        nickname: sesion.nickname,
+        sala_id: sesion.sala_id,
+        tipo: sala.tipo
+      }
+    });
+  } catch (error) {
+    console.error('[salaController.obtenerSesionActiva]', error);
+    return res.status(500).json({ error: 'Error al obtener sesión activa.' });
+  }
+};
+
+// ─────────────────────────────────────────────
 // SALA: Historial de Mensajes
 // ─────────────────────────────────────────────
 exports.obtenerMensajes = async (req, res) => {
@@ -148,7 +217,16 @@ exports.obtenerMensajes = async (req, res) => {
       order: [['created_at', 'ASC']]
     });
 
-    return res.json(mensajes);
+    const normalizados = mensajes.map((m) => {
+      const json = m.toJSON();
+      if (json.adjunto) {
+        json.archivo = json.adjunto;
+        delete json.adjunto;
+      }
+      return json;
+    });
+
+    return res.json(normalizados);
   } catch (error) {
     console.error('[salaController.obtenerMensajes]', error);
     return res.status(500).json({ error: 'Error al obtener mensajes.' });
@@ -195,19 +273,29 @@ exports.subirArchivo = async (req, res) => {
 
     const urlArchivo = `/uploads/${req.file.filename}`;
 
-    // Crear mensaje con el archivo adjunto
-    const mensaje = await Mensaje.create({
+    const resultado = await persistirArchivoEnWorker({
       contenido: `[Archivo: ${req.file.originalname}]`,
       sala_id,
-      sesion_id: sesion_id || null
-    });
-
-    const archivo = await Archivo.create({
+      sesion_id: sesion_id || null,
       url: urlArchivo,
       peso_bytes: req.file.size,
-      mimetype: req.file.mimetype,
-      mensaje_id: mensaje.id
+      mimetype: req.file.mimetype
     });
+
+    const io = req.app.get('io');
+    if (io) {
+      const sesion = sesion_id ? await Sesion.findByPk(sesion_id) : null;
+      io.to(sala_id).emit('new_file', {
+        mensaje_id: resultado.mensaje_id,
+        archivo: {
+          url: urlArchivo,
+          mimetype: req.file.mimetype,
+          peso_bytes: req.file.size
+        },
+        nickname: sesion?.nickname || 'Anonimo',
+        timestamp: new Date().toISOString()
+      });
+    }
 
     res.status(201).json({
       mensaje: 'Archivo subido con éxito',
@@ -217,7 +305,7 @@ exports.subirArchivo = async (req, res) => {
         mimetype: req.file.mimetype,
         peso_bytes: req.file.size
       },
-      mensaje_id: mensaje.id
+      mensaje_id: resultado.mensaje_id
     });
   } catch (error) {
     console.error('[salaController.subirArchivo]', error);

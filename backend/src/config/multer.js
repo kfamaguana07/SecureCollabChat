@@ -1,11 +1,17 @@
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
+
+const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Configuración de almacenamiento en disco
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     // Los archivos se guardan en una carpeta física en el servidor
-    cb(null, 'uploads/'); 
+    cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
     // Generamos un nombre único para evitar colisiones entre usuarios

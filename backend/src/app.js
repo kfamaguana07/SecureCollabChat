@@ -22,10 +22,16 @@ const io = new Server(server, {
   }
 });
 
+// Exponer io para controladores
+app.set('io', io);
+
 // ── Middlewares ─────────────────────────────────────────
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Confiar en proxy headers para obtener IP correcta (importante en Docker/producción)
+app.set('trust proxy', true);
 
 // Servir archivos subidos estáticamente
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));

@@ -55,10 +55,25 @@ export default function App() {
     setSesion(null);
   };
 
+  useEffect(() => {
+    const navEntry = performance.getEntriesByType('navigation')[0];
+    if (navEntry && navEntry.type === 'reload') {
+      sessionStorage.removeItem('sesion');
+      setSesion(null);
+    }
+  }, []);
+
   // ── Vista Admin ───────────────────────────────────────
   if (route === 'admin') {
     if (!adminLogged) return <AdminLogin onLogin={() => setAdminLogged(true)} />;
-    return <AdminDashboard onLogout={() => setAdminLogged(false)} />;
+    return (
+      <AdminDashboard
+        onLogout={() => {
+          setAdminLogged(false);
+          window.location.href = '/';
+        }}
+      />
+    );
   }
 
   // ── Vista Usuario ─────────────────────────────────────

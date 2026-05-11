@@ -4,9 +4,9 @@ import {
   MessageSquare, File, X, ChevronRight
 } from 'lucide-react';
 import {
-  initSocket, emitJoinRoom, emitSendMessage, emitArchivoSubido,
+  initSocket, emitJoinRoom, emitSendMessage,
   emitTyping, emitStopTyping, onNewMessage, onNewFile,
-  onUsuarioEntro, onUsuarioSalio, onListaUsuarios, onErrorEvento,
+  onUsuarioEntro, onUsuarioSalio, onListaUsuarios, onErrorEvento, onSesionCerrada,
   onUsuarioEscribiendo, onUsuarioDejEscribir, closeSocket
 } from '@/services/socket';
 import { roomService } from '@/services/api';
@@ -128,7 +128,14 @@ export default function ChatRoom({ sesion, onLeave }) {
 
     // Cargar historial
     roomService.obtenerMensajes(sala_id).then((data) => {
-      setMessages(Array.isArray(data) ? data : []);
+      const normalizados = Array.isArray(data)
+        ? data.map((m) => ({
+          ...m,
+          archivo: m.archivo || m.adjunto || null,
+          tipo: (m.archivo || m.adjunto) ? 'file' : 'text'
+        }))
+        : [];
+      setMessages(normalizados);
       scrollBottom();
     }).catch(() => {});
 
@@ -150,7 +157,16 @@ export default function ChatRoom({ sesion, onLeave }) {
         scrollBottom();
       }),
       onNewFile((msg) => {
-        setMessages((prev) => [...prev, { ...msg, tipo: 'file' }]);
+        const normalized = {
+          ...msg,
+          id: msg.id || msg.mensaje_id,
+          archivo: msg.archivo || msg.adjunto || null,
+          tipo: 'file'
+        };
+        setMessages((prev) => {
+          const exists = prev.some((m) => (m.id || m.mensaje_id) === normalized.id);
+          return exists ? prev : [...prev, normalized];
+        });
         scrollBottom();
       }),
       onListaUsuarios(({ usuarios }) => setUsuarios(usuarios)),
@@ -164,6 +180,10 @@ export default function ChatRoom({ sesion, onLeave }) {
         if (n !== nickname) setTyping(`${n} está escribiendo...`);
       }),
       onUsuarioDejEscribir(() => setTyping('')),
+      onSesionCerrada(() => {
+        closeSocket();
+        onLeave();
+      }),
       onErrorEvento(({ error }) => console.error('Socket error:', error)),
     ];
 
@@ -204,7 +224,20 @@ export default function ChatRoom({ sesion, onLeave }) {
     setUploading(true);
     try {
       const data = await roomService.subirArchivo(sala_id, file, sesion_id);
-      emitArchivoSubido(sala_id, data.archivo, nickname, data.mensaje_id);
+      const nuevo = {
+        id: data.mensaje_id,
+        contenido: `[Archivo: ${file.name}]`,
+        archivo: data.archivo,
+        sesion_id,
+        nickname,
+        timestamp: new Date().toISOString(),
+        tipo: 'file'
+      };
+      setMessages((prev) => {
+        const exists = prev.some((m) => (m.id || m.mensaje_id) === nuevo.id);
+        return exists ? prev : [...prev, nuevo];
+      });
+      scrollBottom();
       setFile(null);
       if (fileRef.current) fileRef.current.value = '';
     } catch (err) {

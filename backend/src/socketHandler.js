@@ -76,14 +76,39 @@ function persistirMensajeEnWorker(datos) {
  */
 function configurarSockets(io) {
 
+  const INACTIVITY_MS = parseInt(process.env.INACTIVITY_MS, 10) || 10 * 60 * 1000;
+  const INACTIVITY_CHECK_MS = Math.min(60000, Math.max(10000, Math.floor(INACTIVITY_MS / 2)));
+
   // Almacén en memoria: { socket_id → { sesion_id, nickname, sala_id } }
   const usuariosConectados = new Map();
+  const socketsPorSesion = new Map();
+  const actividadPorSocket = new Map();
+
+  const touchActividad = (socket) => {
+    actividadPorSocket.set(socket.id, Date.now());
+  };
+
+  setInterval(() => {
+    const now = Date.now();
+    for (const [socketId, lastActivity] of actividadPorSocket.entries()) {
+      if (now - lastActivity > INACTIVITY_MS) {
+        const socket = io.sockets.sockets.get(socketId);
+        if (socket) {
+          socket.emit('error_evento', { error: 'Desconectado por inactividad.' });
+          socket.disconnect(true);
+        }
+        actividadPorSocket.delete(socketId);
+      }
+    }
+  }, INACTIVITY_CHECK_MS);
 
   io.on('connection', (socket) => {
     console.log(`🔌 Socket conectado: ${socket.id}`);
+    touchActividad(socket);
 
     // ─── EVENTO: Unirse a sala ────────────────────────────────
     socket.on('join_room', async ({ sesion_id, sala_id }) => {
+      touchActividad(socket);
       try {
         const sesion = await Sesion.findByPk(sesion_id);
         if (!sesion) {
@@ -104,6 +129,11 @@ function configurarSockets(io) {
           nickname: sesion.nickname,
           sala_id
         });
+
+        if (!socketsPorSesion.has(sesion_id)) {
+          socketsPorSesion.set(sesion_id, new Set());
+        }
+        socketsPorSesion.get(sesion_id).add(socket.id);
 
         // Unir al room de Socket.io
         socket.join(sala_id);
@@ -131,6 +161,7 @@ function configurarSockets(io) {
 
     // ─── EVENTO: Enviar mensaje de texto ─────────────────────
     socket.on('send_message', async ({ contenido, sala_id, sesion_id }) => {
+      touchActividad(socket);
       try {
         if (!contenido || !contenido.trim()) {
           socket.emit('error_evento', { error: 'El mensaje no puede estar vacío.' });
@@ -173,6 +204,7 @@ function configurarSockets(io) {
 
     // ─── EVENTO: Notificar archivo subido (después del upload HTTP) ──
     socket.on('archivo_subido', ({ sala_id, archivo, nickname, mensaje_id }) => {
+      touchActividad(socket);
       io.to(sala_id).emit('new_file', {
         mensaje_id,
         archivo,
@@ -183,6 +215,7 @@ function configurarSockets(io) {
 
     // ─── EVENTO: Usuario escribiendo (indicador "está escribiendo...") ──
     socket.on('typing', ({ sala_id }) => {
+      touchActividad(socket);
       const datosUsuario = usuariosConectados.get(socket.id);
       if (datosUsuario) {
         socket.to(sala_id).emit('usuario_escribiendo', {
@@ -192,6 +225,7 @@ function configurarSockets(io) {
     });
 
     socket.on('stop_typing', ({ sala_id }) => {
+      touchActividad(socket);
       const datosUsuario = usuariosConectados.get(socket.id);
       if (datosUsuario) {
         socket.to(sala_id).emit('usuario_dejo_escribir', {
@@ -202,10 +236,12 @@ function configurarSockets(io) {
 
     // ─── EVENTO: Desconexión ──────────────────────────────────
     socket.on('disconnect', async () => {
+      actividadPorSocket.delete(socket.id);
       const datosUsuario = usuariosConectados.get(socket.id);
 
       if (datosUsuario) {
         const { sesion_id, nickname, sala_id } = datosUsuario;
+        const socketsSesion = socketsPorSesion.get(sesion_id) || new Set();
 
         try {
           // Eliminar sesión de la DB (desconexión automática)
@@ -213,6 +249,19 @@ function configurarSockets(io) {
         } catch (err) {
           console.error('[socketHandler.disconnect] Error eliminando sesión:', err);
         }
+
+        // Cerrar otras pestañas/sockets que compartan la misma sesión
+        for (const otherSocketId of socketsSesion) {
+          if (otherSocketId === socket.id) continue;
+          const otherSocket = io.sockets.sockets.get(otherSocketId);
+          if (otherSocket) {
+            otherSocket.emit('sesion_cerrada', { reason: 'Sesion cerrada en otra pestaña.' });
+            otherSocket.disconnect(true);
+          }
+          usuariosConectados.delete(otherSocketId);
+          actividadPorSocket.delete(otherSocketId);
+        }
+        socketsPorSesion.delete(sesion_id);
 
         // Notificar a la sala que el usuario salió
         io.to(sala_id).emit('usuario_salio', {

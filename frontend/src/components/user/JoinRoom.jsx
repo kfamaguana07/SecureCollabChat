@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { KeyRound, User, Hash, MessageSquare } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { KeyRound, User, MessageSquare } from 'lucide-react';
 import { roomService } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,9 +17,18 @@ const getDeviceId = () => {
 };
 
 export default function JoinRoom({ onJoined }) {
-  const [form, setForm]     = useState({ nombre_real: '', pin: '', sala_id: '' });
+  const [form, setForm]     = useState({ nombre_real: '', pin: '' });
   const [error, setError]   = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const device_id = getDeviceId();
+    roomService.obtenerSesionActiva(device_id)
+      .then((data) => {
+        if (data?.sesion) onJoined({ ...data.sesion, device_id });
+      })
+      .catch(() => {});
+  }, [onJoined]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,7 +36,6 @@ export default function JoinRoom({ onJoined }) {
 
     if (form.nombre_real.trim().length < 2) { setError('El nombre debe tener al menos 2 caracteres.'); return; }
     if (form.pin.length < 4)                 { setError('El PIN debe tener al menos 4 dígitos.'); return; }
-    if (!form.sala_id.trim())                { setError('Ingresa el ID de la sala.'); return; }
 
     setLoading(true);
     try {
@@ -35,12 +43,21 @@ export default function JoinRoom({ onJoined }) {
       const data = await roomService.unirseSala(
         form.nombre_real.trim(),
         form.pin,
-        device_id,
-        form.sala_id.trim().toUpperCase()
+        device_id
       );
       onJoined({ ...data.sesion, device_id });
     } catch (err) {
-      setError(err.response?.data?.error || 'No se pudo unir a la sala. Verifica el ID y el PIN.');
+      const errorMsg = err.response?.data?.error || 'No se pudo unir a la sala. Verifica el PIN.';
+      
+      // Mensajes más claros para errores comunes
+      if (errorMsg.includes('Ya tienes una sesión activa en otra sala') || 
+          errorMsg.includes('Ya hay una sesión activa desde tu IP')) {
+        setError('No puedes entrar a dos salas simultáneamente. Cierra la otra sala primero.');
+      } else if (errorMsg.includes('PIN incorrecto')) {
+        setError('El PIN que ingresaste es incorrecto.');
+      } else {
+        setError(errorMsg);
+      }
     } finally {
       setLoading(false);
     }
@@ -59,7 +76,7 @@ export default function JoinRoom({ onJoined }) {
             <MessageSquare className="w-7 h-7 text-accent" />
           </div>
           <h1 className="text-2xl font-bold">SecureCollabChat</h1>
-          <p className="text-sm text-muted-foreground">Ingresa con el ID y PIN que te proporcionó el administrador</p>
+          <p className="text-sm text-muted-foreground">Ingresa con el PIN que te proporcionó el administrador</p>
         </div>
 
         <Card>
@@ -75,21 +92,6 @@ export default function JoinRoom({ onJoined }) {
                     placeholder="Ej: Kevin Famaguana"
                     value={form.nombre_real}
                     onChange={(e) => setForm({ ...form, nombre_real: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="sala_id">ID de la sala</Label>
-                <div className="relative">
-                  <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="sala_id"
-                    className="pl-9 font-mono uppercase"
-                    placeholder="ROOM-1234"
-                    value={form.sala_id}
-                    onChange={(e) => setForm({ ...form, sala_id: e.target.value.toUpperCase() })}
                     required
                   />
                 </div>
