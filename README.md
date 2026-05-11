@@ -4,9 +4,9 @@ Sistema de chat en tiempo real con salas seguras. Incluye un panel de administra
 
 ---
 
-## Tema
+## Integrantes
 
-Sistema de chat en tiempo real con salas seguras.
+Kevin Amaguaña Casa
 
 ---
 
@@ -101,22 +101,6 @@ erDiagram
     SALA ||--o{ MENSAJE : "contiene"
     SESION ||--o{ MENSAJE : "escribe"
     MENSAJE ||--o| ARCHIVO : "tiene"
-
-    SALA {
-        note: "El PIN se guarda encriptado. No se almacena el PIN original."
-    }
-
-    SESION {
-        note: "Un dispositivo/IP solo puede tener una sesion activa en una sala."
-    }
-
-    MENSAJE {
-        note: "Los mensajes no se actualizan, solo se eliminan. No hay campo updated_at."
-    }
-
-    ARCHIVO {
-        note: "Solo aplica para salas tipo multimedia."
-    }
 ```
 
 ### Relaciones
