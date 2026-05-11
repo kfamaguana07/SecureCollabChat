@@ -213,6 +213,46 @@ function configurarSockets(io) {
       });
     });
 
+    // ─── EVENTO: Eliminar mensaje ─────────────────────────────
+    socket.on('delete_message', async ({ mensaje_id, sala_id, sesion_id }) => {
+      touchActividad(socket);
+      try {
+        const datosUsuario = usuariosConectados.get(socket.id);
+        if (!datosUsuario || datosUsuario.sala_id !== sala_id) {
+          socket.emit('error_evento', { error: 'No estás en esta sala.' });
+          return;
+        }
+
+        const mensaje = await Mensaje.findByPk(mensaje_id);
+        if (!mensaje) {
+          socket.emit('error_evento', { error: 'Mensaje no encontrado.' });
+          return;
+        }
+
+        if (mensaje.sala_id !== sala_id) {
+          socket.emit('error_evento', { error: 'El mensaje no pertenece a esta sala.' });
+          return;
+        }
+
+        if (mensaje.sesion_id !== sesion_id) {
+          socket.emit('error_evento', { error: 'Solo puedes eliminar tus propios mensajes.' });
+          return;
+        }
+
+        await mensaje.destroy();
+
+        io.to(sala_id).emit('message_deleted', {
+          mensaje_id,
+          sala_id,
+          timestamp: new Date().toISOString()
+        });
+
+      } catch (err) {
+        console.error('[socketHandler.delete_message]', err);
+        socket.emit('error_evento', { error: 'Error al eliminar el mensaje.' });
+      }
+    });
+
     // ─── EVENTO: Usuario escribiendo (indicador "está escribiendo...") ──
     socket.on('typing', ({ sala_id }) => {
       touchActividad(socket);

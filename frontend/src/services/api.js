@@ -40,7 +40,8 @@ export const roomService = {
   unirseSala:      async (nombre_real, pin, device_id) => (await api.post(ENDPOINTS.SALAS_UNIRSE, { nombre_real, pin, device_id })).data,
   obtenerSesionActiva: async (device_id) => (await api.get(ENDPOINTS.SALAS_SESION, { params: { device_id } })).data,
   obtenerMensajes: async (id)                                 => (await api.get(ENDPOINTS.SALAS_MENSAJES(id))).data,
-  obtenerUsuarios: async (id)                                 => (await api.get(ENDPOINTS.SALAS_USUARIOS(id))).data,
+  eliminarMensaje: async (salaId, mensajeId)                => (await api.delete(ENDPOINTS.SALAS_DELETE_MSG(salaId, mensajeId))).data,
+  obtenerUsuarios: async (id)                               => (await api.get(ENDPOINTS.SALAS_USUARIOS(id))).data,
   subirArchivo:    async (id, file, sesion_id) => {
     const form = new FormData();
     form.append('file', file);

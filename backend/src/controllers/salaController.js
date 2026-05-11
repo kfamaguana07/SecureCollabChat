@@ -312,3 +312,33 @@ exports.subirArchivo = async (req, res) => {
     res.status(500).json({ error: 'Error al procesar la subida.' });
   }
 };
+
+// ─────────────────────────────────────────────
+// SALA: Eliminar mensaje
+// ─────────────────────────────────────────────
+exports.eliminarMensaje = async (req, res) => {
+  try {
+    const { id, mid } = req.params;
+
+    if (!id || !mid) {
+      return res.status(400).json({ error: 'sala_id y mensaje_id son requeridos.' });
+    }
+
+    const sala = await Sala.findByPk(id);
+    if (!sala) return res.status(404).json({ error: 'La sala no existe.' });
+
+    const mensaje = await Mensaje.findByPk(mid);
+    if (!mensaje) return res.status(404).json({ error: 'El mensaje no existe.' });
+
+    if (mensaje.sala_id !== id) {
+      return res.status(400).json({ error: 'El mensaje no pertenece a esta sala.' });
+    }
+
+    await mensaje.destroy();
+
+    return res.json({ mensaje: 'Mensaje eliminado.', mensaje_id: parseInt(mid) });
+  } catch (error) {
+    console.error('[salaController.eliminarMensaje]', error);
+    return res.status(500).json({ error: 'Error al eliminar mensaje.' });
+  }
+};

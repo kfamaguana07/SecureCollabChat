@@ -13,6 +13,7 @@ router.delete('/:id', auth, salaController.eliminarSala);                  // El
 router.get('/sesion', salaController.obtenerSesionActiva);                 // Sesion activa por device_id
 router.post('/join', salaController.unirseSala);                           // Unirse a sala con PIN
 router.get('/:id/mensajes', salaController.obtenerMensajes);               // Historial de mensajes
+router.delete('/:id/mensajes/:mid', salaController.eliminarMensaje);         // Eliminar mensaje
 router.get('/:id/usuarios', salaController.obtenerUsuarios);               // Usuarios conectados
 
 // ── Multimedia

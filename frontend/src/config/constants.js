@@ -14,11 +14,13 @@ export const ENDPOINTS = {
   SALAS_MENSAJES:  (id) => `/api/salas/${id}/mensajes`,
   SALAS_USUARIOS:  (id) => `/api/salas/${id}/usuarios`,
   SALAS_UPLOAD:    (id) => `/api/salas/${id}/upload`,
+  SALAS_DELETE_MSG:(salaId, msgId) => `/api/salas/${salaId}/mensajes/${msgId}`,
 };
 
 export const SOCKET_EVENTS = {
   JOIN_ROOM:            'join_room',
   SEND_MESSAGE:         'send_message',
+  DELETE_MESSAGE:       'delete_message',
   ARCHIVO_SUBIDO:       'archivo_subido',
   TYPING:               'typing',
   STOP_TYPING:          'stop_typing',
@@ -31,4 +33,5 @@ export const SOCKET_EVENTS = {
   USUARIO_DEJO_ESCRIBIR:'usuario_dejo_escribir',
   SESION_CERRADA:       'sesion_cerrada',
   ERROR_EVENTO:         'error_evento',
+  MESSAGE_DELETED:      'message_deleted',
 };

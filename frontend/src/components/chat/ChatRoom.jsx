@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Send, Paperclip, LogOut, Users, Hash, Image,
-  MessageSquare, File, X, ChevronRight
+  MessageSquare, File, X, ChevronRight, Trash2
 } from 'lucide-react';
 import {
-  initSocket, emitJoinRoom, emitSendMessage,
+  initSocket, emitJoinRoom, emitSendMessage, emitDeleteMessage,
   emitTyping, emitStopTyping, onNewMessage, onNewFile,
   onUsuarioEntro, onUsuarioSalio, onListaUsuarios, onErrorEvento, onSesionCerrada,
-  onUsuarioEscribiendo, onUsuarioDejEscribir, closeSocket
+  onUsuarioEscribiendo, onUsuarioDejEscribir, onMessageDeleted, closeSocket
 } from '@/services/socket';
 import { roomService } from '@/services/api';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ import { Badge, Separator } from '@/components/ui/primitives';
 import { API_URL } from '@/config/constants';
 
 // ─── Burbuja de mensaje ──────────────────────────────────
-function MessageBubble({ msg, isOwn }) {
+function MessageBubble({ msg, isOwn, onDelete }) {
   const isFile = msg.archivo || msg.tipo === 'file';
 
   return (
@@ -27,7 +27,7 @@ function MessageBubble({ msg, isOwn }) {
         </span>
       )}
 
-      <div className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
+      <div className={`group relative px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
         isOwn
           ? 'bg-primary text-primary-foreground rounded-br-sm'
           : 'bg-secondary text-foreground rounded-bl-sm border border-border'
@@ -36,6 +36,16 @@ function MessageBubble({ msg, isOwn }) {
           <FileMessage archivo={msg.archivo} nombre={msg.contenido} />
         ) : (
           <span className="whitespace-pre-wrap break-words">{msg.contenido}</span>
+        )}
+
+        {isOwn && onDelete && (
+          <button
+            onClick={() => onDelete(msg.id)}
+            className="absolute -top-2 -right-2 p-1 rounded-full bg-destructive/80 hover:bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+            title="Eliminar mensaje"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
         )}
       </div>
 
@@ -185,6 +195,9 @@ export default function ChatRoom({ sesion, onLeave }) {
         onLeave();
       }),
       onErrorEvento(({ error }) => console.error('Socket error:', error)),
+      onMessageDeleted(({ mensaje_id }) => {
+        setMessages((prev) => prev.filter((m) => (m.id || m.mensaje_id) !== mensaje_id));
+      }),
     ];
 
     return () => {
@@ -259,6 +272,10 @@ export default function ChatRoom({ sesion, onLeave }) {
     onLeave();
   };
 
+  const handleDeleteMessage = (mensaje_id) => {
+    emitDeleteMessage(mensaje_id, sala_id, sesion_id);
+  };
+
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Header */}
@@ -308,6 +325,7 @@ export default function ChatRoom({ sesion, onLeave }) {
                 key={msg.id || i}
                 msg={msg}
                 isOwn={msg.sesion_id === sesion_id || msg.nickname === nickname}
+                onDelete={handleDeleteMessage}
               />
             ))}
 
