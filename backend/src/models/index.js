@@ -1,8 +1,8 @@
-const Sala = require('./Sala');
-const Sesion = require('./Sesion');
-const Mensaje = require('./Mensaje');
-const Archivo = require('./Archivo');
-const Administrador = require('./Administrador');
+const Sala = require('./sala');
+const Sesion = require('./sesion');
+const Mensaje = require('./mensaje');
+const Archivo = require('./archivo');
+const Administrador = require('./administrador');
 
 // 1. Relación Sala - Sesión (Un usuario/dispositivo pertenece a una sala)
 Sala.hasMany(Sesion, { foreignKey: 'sala_id', as: 'participantes' });

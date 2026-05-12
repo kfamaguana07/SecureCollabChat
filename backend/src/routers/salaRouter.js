@@ -17,6 +17,16 @@ router.delete('/:id/mensajes/:mid', salaController.eliminarMensaje);         // 
 router.get('/:id/usuarios', salaController.obtenerUsuarios);               // Usuarios conectados
 
 // ── Multimedia
-router.post('/:id/upload', upload.single('file'), salaController.subirArchivo); // Subir archivo
+router.post('/:id/upload', (req, res, next)=>{
+    upload.single('file')(req, res, (err)=>{
+        if(err){
+            if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({ error: 'El archivo es demasiado grande. El límite es de 10MB.' });
+        };
+        return res.status(400).json({ error: err.message });
+        }
+        next();
+    })
+}, salaController.subirArchivo); // Subir archivo
 
 module.exports = router;

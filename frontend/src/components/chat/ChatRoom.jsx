@@ -234,6 +234,13 @@ export default function ChatRoom({ sesion, onLeave }) {
   // Subir archivo
   const handleFileUpload = async () => {
     if (!file) return;
+    const  MAX_SIZE = 10 * 1024 * 1024;
+    if(file.size > MAX_SIZE){
+      alert("El archivo excede el límite de 10MB permitido.");
+      setFile(null);
+      if (fileRef.current) fileRef.current.value = '';
+      return;
+    }
     setUploading(true);
     try {
       const data = await roomService.subirArchivo(sala_id, file, sesion_id);
@@ -255,6 +262,7 @@ export default function ChatRoom({ sesion, onLeave }) {
       if (fileRef.current) fileRef.current.value = '';
     } catch (err) {
       console.error('Upload error:', err);
+      alert(err.response?.data?.error || "Error al subir el archivo");
     } finally {
       setUploading(false);
     }
