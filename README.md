@@ -7,6 +7,8 @@ Sistema de chat en tiempo real con salas seguras. Incluye un panel de administra
 ## Integrantes
 
 Kevin Amaguaña Casa
+Kevin Asmal
+Carlos Ñato
 
 ---
 
